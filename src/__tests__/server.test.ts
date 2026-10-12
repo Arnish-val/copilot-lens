@@ -1,5 +1,5 @@
 import type { Server } from "node:http";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../server";
 
 function startTestServer(): Promise<Server> {
@@ -19,8 +19,13 @@ function closeTestServer(server: Server): Promise<void> {
   });
 }
 
+afterEach(() => vi.unstubAllEnvs());
+
+const expectedVersion = (require("../../package.json") as { version: string }).version;
+
 describe("GET /api/health", () => {
-  it("returns an OK status and version", async () => {
+  it.each(["99.99.99-parent-package", ""])("returns this application version when parent npm version is %s", async parentVersion => {
+    vi.stubEnv("npm_package_version", parentVersion);
     const server = await startTestServer();
     const address = server.address();
 
@@ -36,7 +41,7 @@ describe("GET /api/health", () => {
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual({
         status: "ok",
-        version: expect.any(String),
+        version: expectedVersion,
       });
     } finally {
       await closeTestServer(server);
