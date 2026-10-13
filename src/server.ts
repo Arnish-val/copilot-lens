@@ -144,7 +144,7 @@ export function createApp(options: AppOptions = {}) {
       res.setHeader("Content-Type", "application/x-ndjson");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="session-${session.id}.jsonl"`,
+        `attachment; filename="session-${session.id}.jsonl"`
       );
       res.send(line + "\n");
     } catch (err: any) {
@@ -164,7 +164,7 @@ export function createApp(options: AppOptions = {}) {
       const raw =
         typeof req.query.source === "string" ? req.query.source : "all";
       const source: AnalyticsSourceFilter = validSources.includes(
-        raw as AnalyticsSourceFilter,
+        raw as AnalyticsSourceFilter
       )
         ? (raw as AnalyticsSourceFilter)
         : "all";
@@ -212,7 +212,7 @@ export function createApp(options: AppOptions = {}) {
       const raw =
         typeof req.query.source === "string" ? req.query.source : "all";
       const source: TokenSourceFilter = validSources.includes(
-        raw as TokenSourceFilter,
+        raw as TokenSourceFilter
       )
         ? (raw as TokenSourceFilter)
         : "all";
