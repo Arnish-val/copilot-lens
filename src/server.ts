@@ -1,6 +1,14 @@
 import express from "express";
 import path from "path";
-import { listSessions, getSession, getAnalytics, listReposWithScores, getRepoScore, getVSCodeScore, type AnalyticsSourceFilter } from "./sessions";
+import {
+  listSessions,
+  getSession,
+  getAnalytics,
+  listReposWithScores,
+  getRepoScore,
+  getVSCodeScore,
+  type AnalyticsSourceFilter,
+} from "./sessions";
 import { clearCache } from "./cache";
 import { SearchIndex } from "./search";
 import { getTokenUsage, type TokenSourceFilter } from "./token-usage";
@@ -46,46 +54,26 @@ export function createApp(options: AppOptions = {}) {
 
   const searchIndex = new SearchIndex();
 
-  // Cache version once when the app is created (avoid per-request I/O)
-
-  let appVersion: string | undefined;
-
-  if (!appVersion) {
-
-    try {
-
-      appVersion = (require("../package.json") as { version?: string }).version;
-
-    } catch {
-
-      appVersion = "0.0.0";
-
-    }
-
-  }
-
+  // Read the package version once when the app is created, not per request.
+  const { version: appVersion } = require("../package.json") as {
+    version: string;
+  };
 
   // API: Health check
   app.get("/api/health", (_req, res) => {
-    res.status(200).json({
-
-      status: "ok",
-      version: appVersion,
-
-    });
+    res.status(200).json({ status: "ok", version: appVersion });
   });
 
   // Serve static frontend files
 
   app.use(express.static(path.join(__dirname, "..", "public")));
 
-
-
   // API: Full-text search
   app.get("/api/search", async (req, res) => {
     try {
       const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
-      const source = typeof req.query.source === "string" ? req.query.source : "all";
+      const source =
+        typeof req.query.source === "string" ? req.query.source : "all";
       const limit = parseInt(req.query.limit as string) || 20;
 
       if (!q) return res.json([]);
@@ -137,12 +125,15 @@ export function createApp(options: AppOptions = {}) {
         res.status(404).json({ error: "Session not found" });
         return;
       }
-      const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+      const messages: Array<{ role: "user" | "assistant"; content: string }> =
+        [];
       for (const e of session.events) {
-        const content = typeof e.data?.content === "string" ? e.data.content.trim() : "";
+        const content =
+          typeof e.data?.content === "string" ? e.data.content.trim() : "";
         if (!content) continue;
         if (e.type === "user.message") messages.push({ role: "user", content });
-        else if (e.type === "assistant.message") messages.push({ role: "assistant", content });
+        else if (e.type === "assistant.message")
+          messages.push({ role: "assistant", content });
       }
       const line = JSON.stringify({
         session_id: session.id,
@@ -153,7 +144,7 @@ export function createApp(options: AppOptions = {}) {
       res.setHeader("Content-Type", "application/x-ndjson");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="session-${session.id}.jsonl"`
+        `attachment; filename="session-${session.id}.jsonl"`,
       );
       res.send(line + "\n");
     } catch (err: any) {
@@ -164,9 +155,19 @@ export function createApp(options: AppOptions = {}) {
   // API: Analytics
   app.get("/api/analytics", (req, res) => {
     try {
-      const validSources: AnalyticsSourceFilter[] = ["all", "cli", "vscode", "claude-code"];
-      const raw = typeof req.query.source === "string" ? req.query.source : "all";
-      const source: AnalyticsSourceFilter = validSources.includes(raw as AnalyticsSourceFilter) ? (raw as AnalyticsSourceFilter) : "all";
+      const validSources: AnalyticsSourceFilter[] = [
+        "all",
+        "cli",
+        "vscode",
+        "claude-code",
+      ];
+      const raw =
+        typeof req.query.source === "string" ? req.query.source : "all";
+      const source: AnalyticsSourceFilter = validSources.includes(
+        raw as AnalyticsSourceFilter,
+      )
+        ? (raw as AnalyticsSourceFilter)
+        : "all";
       const analytics = getAnalytics(source);
       res.json(analytics);
     } catch (err: any) {
@@ -203,9 +204,18 @@ export function createApp(options: AppOptions = {}) {
   // API: Token usage (parsed from ~/.copilot/logs and ~/.claude/projects)
   app.get("/api/token-usage", (req, res) => {
     try {
-      const validSources: TokenSourceFilter[] = ["all", "copilot-cli", "claude-code"];
-      const raw = typeof req.query.source === "string" ? req.query.source : "all";
-      const source: TokenSourceFilter = validSources.includes(raw as TokenSourceFilter) ? (raw as TokenSourceFilter) : "all";
+      const validSources: TokenSourceFilter[] = [
+        "all",
+        "copilot-cli",
+        "claude-code",
+      ];
+      const raw =
+        typeof req.query.source === "string" ? req.query.source : "all";
+      const source: TokenSourceFilter = validSources.includes(
+        raw as TokenSourceFilter,
+      )
+        ? (raw as TokenSourceFilter)
+        : "all";
       res.json(getTokenUsage(source));
     } catch (err: any) {
       res.status(500).json({ error: err.message });
